@@ -1,0 +1,6 @@
+<ted5000 GWID="99999" auth="">
+	<COST mrd="1" fixed="10.00" min="5.00"/>
+	<MTU ID="DEADBEEF" type="0">
+		<cumulative timestamp="1439588548" watts="1000" rate="0.1234" pf="99.9"/>
+	</MTU>
+</ted5000>

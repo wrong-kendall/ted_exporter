@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -94,12 +93,8 @@ type Cumulative struct {
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): Count posts (success, failure, by GWID)
 	// TODO(kendall): Fix error handling
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Fprintf(w, "Could not read http body: %s", err)
-	}
 	var ted ted5000
-	err = xml.Unmarshal(body, &ted)
+	err := xml.NewDecoder(r.Body).Decode(&ted)
 	if err != nil {
 		fmt.Fprintf(w, "Could not parse post XML: %s", err)
 	}
@@ -121,21 +116,21 @@ func activateHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): Authtoken
 	// TODO(kendall): postrate
 	// TODO(kendall): highprec
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Fprintf(w, "Could not read http body: %s", err)
-	}
 	var activation ted5000ActivationRequest
-	err = xml.Unmarshal(body, &activation)
+	err := xml.NewDecoder(r.Body).Decode(&activation)
 	if err != nil {
 		fmt.Fprintf(w, "Could not parse activation XML: %s", err)
 	}
-	response := ted5000ActivationResponse{PostServer: r.Host, UseSSL: false, PostPort: 9191, PostRate: 1, PostURL: "/post", HighPrec: "T"}
-	body, err = xml.Marshal(response)
+	err = xml.NewEncoder(w).Encode(ted5000ActivationResponse{
+		PostServer: r.Host,
+		UseSSL: false,
+		PostPort: 9191,
+		PostRate: 1,
+		PostURL: "/post",
+		HighPrec: "T"})
 	if err != nil {
 		fmt.Fprintf(w, "Could not create XML activation response: %s", err)
 	}
-	fmt.Fprintf(w, string(body))
 }
 
 func main() {
