@@ -94,8 +94,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): Count posts (success, failure, by GWID)
 	// TODO(kendall): Fix error handling
 	var ted ted5000
-	err := xml.NewDecoder(r.Body).Decode(&ted)
-	if err != nil {
+	if err := xml.NewDecoder(r.Body).Decode(&ted); err != nil {
 		fmt.Fprintf(w, "Could not parse post XML: %s", err)
 	}
 	for i := 0; i < len(ted.MTU); i++ {
