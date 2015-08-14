@@ -117,18 +117,16 @@ func activateHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): postrate
 	// TODO(kendall): highprec
 	var activation ted5000ActivationRequest
-	err := xml.NewDecoder(r.Body).Decode(&activation)
-	if err != nil {
+	if err := xml.NewDecoder(r.Body).Decode(&activation); err != nil {
 		fmt.Fprintf(w, "Could not parse activation XML: %s", err)
 	}
-	err = xml.NewEncoder(w).Encode(ted5000ActivationResponse{
+	if err := xml.NewEncoder(w).Encode(ted5000ActivationResponse{
 		PostServer: r.Host,
 		UseSSL: false,
 		PostPort: 9191,
 		PostRate: 1,
 		PostURL: "/post",
-		HighPrec: "T"})
-	if err != nil {
+		HighPrec: "T"}); err != nil {
 		fmt.Fprintf(w, "Could not create XML activation response: %s", err)
 	}
 }
