@@ -119,24 +119,24 @@ func activateHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): postrate
 	// TODO(kendall): highprec
 	var activation ted5000ActivationRequest
+	var port int
+	var err error
 	if err := xml.NewDecoder(r.Body).Decode(&activation); err != nil {
 		fmt.Fprintf(w, "Could not parse activation XML: %s", err)
 	}
 	log.Debugf("Activation request: %s", activation)
 	address := strings.Split(*listenAddress, ":")
-	// TODO(kendall): This is really dumb. fix it...
-	if port, err := strconv.Atoi(address[len(address)-1]); err == nil {
-		if err := xml.NewEncoder(w).Encode(ted5000ActivationResponse{
-			PostServer: r.Host,
-			UseSSL: false,
-			PostPort: port,
-			PostRate: 1,
-			PostURL: "/post",
-			HighPrec: "T"}); err != nil {
-			fmt.Fprintf(w, "Could not create XML activation response: %s", err)
-		}
-	} else {
+	if port, err = strconv.Atoi(address[len(address)-1]); err != nil {
 		fmt.Printf("Could not determine port from %s: %s", *listenAddress, err)
+	}
+	if err := xml.NewEncoder(w).Encode(ted5000ActivationResponse{
+		PostServer: r.Host,
+		UseSSL: false,
+		PostPort: port,
+		PostRate: 1,
+		PostURL: "/post",
+		HighPrec: "T"}); err != nil {
+		fmt.Fprintf(w, "Could not create XML activation response: %s", err)
 	}
 }
 
