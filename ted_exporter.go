@@ -4,9 +4,9 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
@@ -120,15 +120,18 @@ func activateHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): postrate
 	// TODO(kendall): highprec
 	var activation ted5000ActivationRequest
+	var port_suffix string
 	var port int
 	var err error
 	if err := xml.NewDecoder(r.Body).Decode(&activation); err != nil {
 		fmt.Fprintf(w, "Could not parse activation XML: %s", err)
 	}
 	log.Debugf("Activation request: %s", activation)
-	address := strings.Split(*listenAddress, ":")
-	if port, err = strconv.Atoi(address[len(address)-1]); err != nil {
+	if _, port_suffix, err = net.SplitHostPort(*listenAddress); err != nil {
 		fmt.Printf("Could not determine port from %s: %s", *listenAddress, err)
+	}
+	if port, err = strconv.Atoi(port_suffix); err != nil {
+		fmt.Printf("Could not create port (%s) to int: %s", port, err)
 	}
 	if err := xml.NewEncoder(w).Encode(ted5000ActivationResponse{
 		PostServer: r.Host,
