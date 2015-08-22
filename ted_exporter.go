@@ -23,10 +23,10 @@ var (
 )
 
 var (
-	wattsUsed = prometheus.NewCounterVec(
+	watts = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "watts_used_by_mtu",
-			Help: "The watts used.",
+			Name: "watts",
+			Help: "The watts used by a device.",
 		},
 		[]string{"mtu"},
 	)
@@ -37,10 +37,10 @@ var (
 		},
 		[]string{"mtu"},
 	)
-	mtuVoltage = prometheus.NewGaugeVec(
+	voltage = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "mtuVoltage",
-			Help: "The last reported voltage.",
+			Name: "voltage",
+			Help: "The last voltage reported by the device.",
 		},
 		[]string{"mtu"},
 	)
@@ -103,9 +103,9 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("Update post: %s", ted)
 	for i := 0; i < len(ted.MTU); i++ {
 		for j :=0; j < len(ted.MTU[i].Cumulative); j++ {
-			wattsUsed.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Watts)
+			watts.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Watts)
 			updatesPerPost.WithLabelValues(ted.MTU[i].ID).Inc()
-			mtuVoltage.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Voltage)
+			voltage.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Voltage)
 		}
 	}
 	fmt.Fprintf(w, "Ok")
@@ -145,9 +145,9 @@ func main() {
 	flag.Parse()
 
 	handler := prometheus.Handler()
-	prometheus.MustRegister(wattsUsed)
+	prometheus.MustRegister(watts)
 	prometheus.MustRegister(updatesPerPost)
-	prometheus.MustRegister(mtuVoltage)
+	prometheus.MustRegister(voltage)
 
 	http.Handle(*metricsPath, handler)
 	http.HandleFunc("/activate", activateHandler)
