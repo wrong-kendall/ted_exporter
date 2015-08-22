@@ -19,6 +19,7 @@ var (
 
 	listenAddress = flag.String("web.listen-address", ":9191", "Address on which to expose metrics and web interface.")
 	metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
+	postRate   = flag.Int("post-rate", 1, "How frequently clients should post (in minutes)")
 )
 
 var (
@@ -133,7 +134,7 @@ func activateHandler(w http.ResponseWriter, r *http.Request) {
 		PostServer: r.Host,
 		UseSSL: false,
 		PostPort: port,
-		PostRate: 1,
+		PostRate: *postRate,
 		PostURL: "/post",
 		HighPrec: "T"}); err != nil {
 		fmt.Fprintf(w, "Could not create XML activation response: %s", err)
