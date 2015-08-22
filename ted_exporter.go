@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
@@ -97,6 +99,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	if err := xml.NewDecoder(r.Body).Decode(&ted); err != nil {
 		fmt.Fprintf(w, "Could not parse post XML: %s", err)
 	}
+	log.Debugf("Update post: %s", ted)
 	for i := 0; i < len(ted.MTU); i++ {
 		for j :=0; j < len(ted.MTU[i].Cumulative); j++ {
 			wattsUsed.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Watts)
@@ -116,13 +119,20 @@ func activateHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): postrate
 	// TODO(kendall): highprec
 	var activation ted5000ActivationRequest
+	var port int
+	var err error
 	if err := xml.NewDecoder(r.Body).Decode(&activation); err != nil {
 		fmt.Fprintf(w, "Could not parse activation XML: %s", err)
+	}
+	log.Debugf("Activation request: %s", activation)
+	address := strings.Split(*listenAddress, ":")
+	if port, err = strconv.Atoi(address[len(address)-1]); err != nil {
+		fmt.Printf("Could not determine port from %s: %s", *listenAddress, err)
 	}
 	if err := xml.NewEncoder(w).Encode(ted5000ActivationResponse{
 		PostServer: r.Host,
 		UseSSL: false,
-		PostPort: 9191,
+		PostPort: port,
 		PostRate: 1,
 		PostURL: "/post",
 		HighPrec: "T"}); err != nil {
