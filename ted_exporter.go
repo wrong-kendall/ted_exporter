@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -92,20 +93,46 @@ type Cumulative struct {
 	Pf float64 `xml:"pf,attr"`
 	Voltage float64 `xml:"voltage,attr"`
 }
+type cumulativeSorter struct {
+	cumulatives []Cumulative
+	by      func(p1, p2 *Cumulative) bool
+}
+type By func(c1, c2 *Cumulative) bool
+func (by By) Sort(cumulatives []Cumulative) {
+	cs := &cumulativeSorter{
+		cumulatives: cumulatives,
+		by:      by,
+	}
+	sort.Sort(cs)
+}
+func (s *cumulativeSorter) Len() int {
+	return len(s.cumulatives)
+}
+func (s *cumulativeSorter) Swap(i, j int) {
+	s.cumulatives[i], s.cumulatives[j] = s.cumulatives[j], s.cumulatives[i]
+}
+func (s *cumulativeSorter) Less(i, j int) bool {
+	return s.by(&s.cumulatives[i], &s.cumulatives[j])
+}
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO(kendall): Count posts (success, failure, by GWID)
 	// TODO(kendall): Fix error handling
+	timestamp := func(c1, c2 *Cumulative) bool {
+		return c1.Timestamp < c2.Timestamp
+	}
 	var ted ted5000
 	if err := xml.NewDecoder(r.Body).Decode(&ted); err != nil {
 		fmt.Fprintf(w, "Could not parse post XML: %s", err)
 	}
 	log.Debugf("Update post: %s", ted)
 	for i := 0; i < len(ted.MTU); i++ {
-		for j :=0; j < len(ted.MTU[i].Cumulative); j++ {
-			watts.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Watts)
+		updates := ted.MTU[i].Cumulative
+		By(timestamp).Sort(updates)
+		for j :=0; j < len(updates); j++ {
 			updatesPerPost.WithLabelValues(ted.MTU[i].ID).Inc()
-			voltage.WithLabelValues(ted.MTU[i].ID).Set(ted.MTU[i].Cumulative[j].Voltage)
+			watts.WithLabelValues(ted.MTU[i].ID).Set(updates[j].Watts)
+			voltage.WithLabelValues(ted.MTU[i].ID).Set(updates[j].Voltage)
 		}
 	}
 	fmt.Fprintf(w, "Ok")
